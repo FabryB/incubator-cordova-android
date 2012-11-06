@@ -42,6 +42,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.Display;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -51,6 +52,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
 import android.widget.LinearLayout;
 
 /**
@@ -177,6 +180,12 @@ public class DroidGap extends Activity implements CordovaInterface {
     // This is not the same as calling super.loadSplashscreen(url)
     protected int splashscreen = 0;
     protected int splashscreenTime = 0;
+    
+    protected static int SPLASHSCREEN_FULLSCREEN = 0;
+    protected static int SPLASHSCREEN_CENTERED = 1;
+    protected int splashscreenType = 0;
+    
+    protected double splashscreenResize = 0.75;
 
     // LoadUrl timeout value in msec (default of 20 sec)
     protected int loadUrlTimeoutValue = 20000;
@@ -469,6 +478,13 @@ public class DroidGap extends Activity implements CordovaInterface {
      * @param Configuration newConfig
      */
     public void onConfigurationChanged(Configuration newConfig) {
+    	 if (splashDialog != null && splashDialog.isShowing()) {
+    		 if (this.getIntegerProperty("splashscreenType", DroidGap.SPLASHSCREEN_FULLSCREEN) == DroidGap.SPLASHSCREEN_CENTERED)  {
+    			 Display display = getWindowManager().getDefaultDisplay();
+    			 splashImage.setMaxHeight((int) Math.ceil(display.getHeight() * this.getDoubleProperty("splashscreenResize", 0.75)));
+    			 splashImage.setMaxWidth((int) Math.ceil(display.getWidth() * this.getDoubleProperty("splashscreenResize", 0.75)));
+    		 }
+    	 }
         //don't reload the current page when the orientation is changed
         super.onConfigurationChanged(newConfig);
     }
@@ -954,6 +970,7 @@ public class DroidGap extends Activity implements CordovaInterface {
     }
 
     protected Dialog splashDialog;
+    protected ImageView splashImage;
 
     /**
      * Removes the Dialog that displays the splash screen
@@ -985,7 +1002,21 @@ public class DroidGap extends Activity implements CordovaInterface {
                 root.setBackgroundColor(that.getIntegerProperty("backgroundColor", Color.BLACK));
                 root.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT,
                         ViewGroup.LayoutParams.FILL_PARENT, 0.0F));
-                root.setBackgroundResource(that.splashscreen);
+                
+                if (that.getIntegerProperty("splashscreenType", DroidGap.SPLASHSCREEN_FULLSCREEN) == DroidGap.SPLASHSCREEN_CENTERED)  {
+                	splashImage = new ImageView(that.getActivity());
+                	splashImage.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT, 0.0F));
+                	splashImage.setImageResource(that.splashscreen);
+                	splashImage.setAdjustViewBounds(true);
+                	splashImage.setMaxHeight((int) Math.ceil(display.getHeight() * that.getDoubleProperty("splashscreenResize", 0.75)));
+                	splashImage.setMaxWidth((int) Math.ceil(display.getWidth() * that.getDoubleProperty("splashscreenResize", 0.75)));
+                	splashImage.setScaleType(ScaleType.CENTER_INSIDE);
+                	root.setGravity(Gravity.CENTER);
+                	root.addView(splashImage);
+                } else {
+                	root.setBackgroundResource(that.splashscreen);
+                }
 
                 // Create and show the dialog
                 splashDialog = new Dialog(that, android.R.style.Theme_Translucent_NoTitleBar);
